@@ -1,0 +1,13 @@
+name: graphite
+version: 0.1.0
+
+authors:
+  - Nguyễn Anh Khoa <ng.akhoa@yahoo.com.vn>
+
+targets:
+  graphite:
+    main: src/graphite.cr
+
+crystal: 0.27.1
+
+license: MIT

@@ -1,0 +1,27 @@
+folder: /home/luibo/GRAPHITE
+
+apps:
+  - name: curl
+    git: 'https://github.com/curl/curl'
+    branch: master
+    build:
+      - './buildconf'
+      - './configure --prefix=$pwd/build/'
+      - 'make'
+      - 'make install'
+    postinstall:
+      bin: ["build/bin/**"]
+      lib: ["build/lib/*"]
+      include: ["build/include/*"]
+
+  - name: node
+    git: 'https://github.com/nodejs/node.git'
+    branch: master
+    build:
+      - 'pyenv local 2.7.15'
+      - './configure'
+      - 'make -j4'
+    postinstall:
+      bin: ["node"]
+      lib: []
+      include: []
