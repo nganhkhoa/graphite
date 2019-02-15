@@ -1,27 +1,29 @@
 folder: ~/GRAPHITE
 
 apps:
-  - name: curl
-    git: 'https://github.com/curl/curl'
-    branch: master
+  - name: graphite
+    git: 'https://github.com/nganhkhoa/graphite'
     build:
-      - './buildconf'
-      - './configure --prefix=$pwd/build/'
-      - 'make'
-      - 'make install'
+      - 'crystal build src/graphite'
     postinstall:
-      bin: ["build/bin/**"]
-      lib: ["build/lib/*"]
-      include: ["build/include/*"]
+      bin: ["graphite"]
+
+  - name: yarn
+    git: 'https://github.com/yarnpkg/yarn.git'
+    build:
+      - 'yarn install'
+      - './scripts/build-dist.sh'
+    postinstall:
+      bin: ["dist/bin/**"]
+      lib: ["dist/lib/**"]
+    skip: true
 
   - name: node
     git: 'https://github.com/nodejs/node.git'
-    branch: master
     build:
       - 'pyenv local 2.7.15'
       - './configure'
       - 'make -j4'
     postinstall:
       bin: ["node"]
-      lib: []
-      include: []
+    skip: true
