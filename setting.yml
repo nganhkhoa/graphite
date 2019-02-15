@@ -1,4 +1,4 @@
-folder: /home/luibo/GRAPHITE
+folder: ~/GRAPHITE
 
 apps:
   - name: curl
