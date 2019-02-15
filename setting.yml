@@ -1,10 +1,10 @@
-folder: ~/GRAPHITE
+folder: /home/luibo/GRAPHITE
 
 apps:
   - name: graphite
     git: 'https://github.com/nganhkhoa/graphite'
     build:
-      - 'crystal build src/graphite'
+      - 'crystal build src/graphite.cr'
     postinstall:
       bin: ["graphite"]
 
@@ -16,7 +16,6 @@ apps:
     postinstall:
       bin: ["dist/bin/**"]
       lib: ["dist/lib/**"]
-    skip: true
 
   - name: node
     git: 'https://github.com/nodejs/node.git'
@@ -26,4 +25,3 @@ apps:
       - 'make -j4'
     postinstall:
       bin: ["node"]
-    skip: true
