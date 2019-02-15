@@ -1,67 +1,67 @@
 require "yaml"
+require "./Utils"
 
 class App
   include YAML::Serializable
 
   property name : String
   property git : String
-  property branch : String
-  property build : Array(String)
+  property branch : String = "master"
+  property build : Array(String) = [] of String
 
   property buildFolder : String = ""
-  property postinstall : Hash(String, Array(String))
+  property postinstall : Hash(String, Array(String)) = {} of String => Array(String)
+
+  property skip : Bool = false
 
   # clone if repo not exist
   # else if branch is the same, pull
   # else checkout and pull
   def update(appFolder)
-    clone(appFolder)
-  end
-
-  # clone app to folder
-  def clone(folder)
-    puts "Clonning: #{@git} to #{folder}"
-    args = ["clone", @git, "--branch", @branch, "--single-branch", folder]
-    Process.run("git", args)
+    installFolder = appFolder + "/#{@name}"
+    unless Dir.exists?(installFolder)
+      puts "Cloning #{@name} to #{installFolder}"
+      runCommand("git clone #{@git} --branch #{@branch} --single-branch #{@name}", appFolder)
+      return true
+    end
+    success = runCommand("git remote update", installFolder)
+    _, status = runCommand("git status -uno", installFolder)
+    if status.match(/behind/)
+      puts "#{@name} is behind, git pull"
+      _, updatelog = runCommand("git pull", installFolder)
+      puts updatelog
+      return true
+    end
+    puts "#{@name} is up to date"
+    false
   end
 
   # build the app
   def build(folder)
     Dir.mkdir(folder) if !Dir.exists?(folder)
     build.each do |command|
-      command = command.split(" ")
-      argv = command.skip(1).map! do |arg|
-        arg.gsub("$pwd", folder)
-      end
-      cmd = command.first
+      command = command.gsub("$pwd", folder)
+      puts "#{folder}: #{command}"
 
-      puts "#{folder}: #{cmd} #{argv}"
-
-      stdout = IO::Memory.new
-      stderr = IO::Memory.new
-      success = Process.run(
-        cmd, argv,
-        output: stdout, error: stderr,
-        chdir: folder
-      ).success?
-      if !success
-        puts "Command failed"
+      success, stdout, stderr = runCommand(command, folder)
+      case success
+      when true
+      when false
+        puts "Error"
         puts "STDERR"
-        puts stderr.to_s
-        break
+        puts stderr
       end
-      # output stdout to log file
-      # ...
     end
   end
 
   def createSymlink(folder, patternArray, target)
+    return if patternArray.nil?
     patternArray.each do |pattern|
       puts "#{folder}/#{pattern}"
       files = Dir.glob("#{folder}" + "/#{pattern}")
       files.each do |file|
-        symlink_file = "#{target}/#{File.basename(file)"
-        puts "#{file} --> #{symlink_file}}"
+        symlink_file = "#{target}/#{File.basename(file)}"
+        puts "#{file} --> #{symlink_file}"
         if File.exists?(symlink_file)
           File.delete(symlink_file)
         end
@@ -77,25 +77,42 @@ class App
     folder, binFolder, libFolder, includeFolder
   )
     puts @postinstall
-    bin_pattern = @postinstall["bin"]
-    lib_pattern = @postinstall["lib"]
-    include_pattern = @postinstall["include"]
+    bin_pattern = @postinstall["bin"]?
+    lib_pattern = @postinstall["lib"]?
+    include_pattern = @postinstall["include"]?
 
     createSymlink(folder, bin_pattern, binFolder)
-    createSymlink(folder, lib_pattern, binFolder)
-    createSymlink(folder, include_pattern, libFolder)
+    createSymlink(folder, lib_pattern, libFolder)
+    createSymlink(folder, include_pattern, includeFolder)
   end
 
   # Run task on an app
   def run(
     task, appFolder, binFolder, libFolder, includeFolder
   )
+    if @skip
+      puts "#{@name} is skip"
+      return
+    end
+
+    puts "Running #{@name}"
+
     installFolder = appFolder + "/#{@name}"
     buildFolder = installFolder + "/#{@buildFolder}"
     case task
     when "install", "update"
-      update(installFolder)
+      if update(appFolder)
+        build(buildFolder)
+        afterInstall(
+          installFolder,
+          binFolder,
+          libFolder,
+          includeFolder
+        )
+      end
+    when "build"
       build(buildFolder)
+    when "symlink"
       afterInstall(
         installFolder,
         binFolder,
@@ -150,8 +167,8 @@ class Setting
     if task == "remove"
       remove(argv)
       return
-    end
 
+    end
     @apps.each do |app|
       app.run(
         task,
