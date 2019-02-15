@@ -8,11 +8,13 @@ A tool to automatically create an app folder by github/tarball.
 
 ## Usage
 
-Prepare a yaml file, the syntax like the example [setting.yml](./setting.yml).
+Prepare a yaml file, the syntax like the example [setting.yml](./setting.yml). There seems to be a problem with `Crystal.Dir.mkdir` that cannot use `~/` for home so change it to `/home/username/`.
 
 `./graphite --setting setting.yml install`
 
-Will create a folder like below in `folder` key of yaml file, default to `~/GRAPHITE`.
+Setting file is default to setting.yml so you can omit it.
+
+Will create a folder like below in `folder` key of yaml file.
 
 ```
 ~/GRAPHITE/
@@ -22,9 +24,9 @@ Will create a folder like below in `folder` key of yaml file, default to `~/GRAP
 └── lib
 ```
 
-Apps will be clone to `app/`, and the execute build commands. Then will make symlink to binary, library, and include folder.
+Apps will be clone to `app/`, and then execute build commands. Then a symlink to binary, library, and include folder is made according to the patterns matches in `postinstall` field.
 
-Then add to `.bashrc` or any config file for your shell.
+Then add to `.bashrc` or any config file for your shell. Here I be using `~GRAPHITE`.
 
 ```bash
 # path file
@@ -49,6 +51,8 @@ if command -v pyenv 1>/dev/null 2>&1; then
     eval "$(pyenv virtualenv-init -)"
 fi
 ```
+
+Also there are some app requires other dependencies or require it self to build. I do not know how to solve this problem yet, beside installing them by order for dependecies issue. But for app require it self it build, how???.
 
 ## Development
 
