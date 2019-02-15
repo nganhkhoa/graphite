@@ -46,4 +46,4 @@ tags
 # End of https://www.gitignore.io/api/crystal,vim,visualstudiocode
 
 # ignore binary
-./graphite
+graphite
