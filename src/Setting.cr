@@ -1,4 +1,5 @@
 require "yaml"
+require "http/client"
 require "./Utils"
 
 class App
@@ -12,6 +13,8 @@ class App
   property buildFolder : String = ""
   property postinstall : Hash(String, Array(String)) = {} of String => Array(String)
 
+  property requireSelf : Hash(String, String | Hash(String, String)) = {} of String => String | Hash(String, String)
+
   property skip : Bool = false
 
   # clone if repo not exist
@@ -21,8 +24,9 @@ class App
     installFolder = appFolder + "/#{@name}"
     unless Dir.exists?(installFolder)
       puts "Cloning #{@name} to #{installFolder}"
-      runCommand("git clone #{@git} --branch #{@branch} --single-branch #{@name}", appFolder)
-      return true
+      success, log = runCommand("git clone #{@git} --branch #{@branch} --single-branch #{@name}", appFolder)
+      puts log
+      return success
     end
     success = runCommand("git remote update", installFolder)
     _, status = runCommand("git status -uno", installFolder)
@@ -37,21 +41,93 @@ class App
   end
 
   # build the app
-  def build(folder)
+  def build(folder, task)
+    unless requireSelf.empty?
+    targz = @requireSelf["targz"]?.as(String)
+    fallbackCommand = @requireSelf["command"]?.as(Hash(String, String))
+    unarchivePath = "#{Dir.tempdir}/#{@name}"
+    fallbackDirectory = ""
+    tempfile = File.tempfile(@name, ".tar.gz")
+
+    oldpath = ENV["PATH"].clone()
+
+    # check for command executable
+    # ignore command from files in diretory
+    fallbackCommand.as(Hash(String, String)).each do |cmd, untarpath|
+      next if Process.find_executable(cmd) || File.exists?("#{folder}/#{cmd}")
+      puts "#{cmd} is not exist, try getting .tar.gz file"
+      if !fallbackDirectory.nil? && fallbackDirectory.size != 0
+        if File.exists?(fallbackDirectory + "/" + untarpath)
+          if File.directory?(fallbackDirectory + "/" + untarpath)
+            ENV["PATH"] = ENV["PATH"] + ":" +
+              fallbackDirectory + "/" + untarpath
+          else
+            ENV["PATH"] = ENV["PATH"] + ":" +
+              File.dirname(fallbackDirectory + "/" + untarpath)
+          end
+        end
+        next
+      end
+      puts ".tar.gz is not download, downloading now"
+      HTTP::Client.get(targz.as(String)) do |response|
+        if response.status_code == 302
+          redirected_url = response.headers["Location"]
+          puts "Redirect to #{redirected_url}"
+          HTTP::Client.get(redirected_url) do |response|
+            File.write(tempfile.path, response.body_io)
+          end
+        else
+          File.write(tempfile.path, response.body_io)
+        end
+      end
+
+      unarchivePath = "#{Dir.tempdir}/#{@name}"
+      runCommand("rm -rf #{unarchivePath.as(String)}", Dir.tempdir) if Dir.exists?(unarchivePath)
+      Dir.mkdir(unarchivePath)
+      puts "Untar at #{unarchivePath}"
+      runCommand("tar -C #{unarchivePath} -xzvf #{tempfile.path}", Dir.tempdir)
+      if Dir.children(unarchivePath).size == 1
+        # untar get a folder
+        fallbackDirectory = unarchivePath + "/" + Dir.children(unarchivePath)[0]
+      else
+        # untar get a list of file
+        fallbackDirectory = unarchivePath
+      end
+      if File.exists?(fallbackDirectory + "/" + untarpath)
+        if File.directory?(fallbackDirectory + "/" + untarpath)
+          ENV["PATH"] = ENV["PATH"] + ":" +
+            fallbackDirectory + "/" + untarpath
+        else
+          ENV["PATH"] = ENV["PATH"] + ":" +
+            File.dirname(fallbackDirectory + "/" + untarpath)
+        end
+      end
+    end
+    tempfile.delete
+    end
+
     Dir.mkdir(folder) if !Dir.exists?(folder)
     build.each do |command|
       command = command.gsub("$pwd", folder)
-      puts "#{folder}: #{command}"
+      commandString = command.split(" ")
+      cmd = commandString.first
+      argv = commandString.skip(1)
 
-      success, stdout, stderr = runCommand(command, folder)
+      puts "#{folder}: #{cmd} #{argv}"
+
+      success, stdout, stderr = runCommand(cmd, argv, folder)
       case success
       when true
+        puts "Success"
+        # write to log file
       when false
         puts "Error"
         puts "STDERR"
         puts stderr
       end
     end
+
+    ENV["PATH"] = oldpath unless requireSelf.empty?
   end
 
   def createSymlink(folder, patternArray, target)
@@ -99,10 +175,11 @@ class App
 
     installFolder = appFolder + "/#{@name}"
     buildFolder = installFolder + "/#{@buildFolder}"
+
     case task
     when "install", "update"
       if update(appFolder)
-        build(buildFolder)
+        build(buildFolder, task)
         afterInstall(
           installFolder,
           binFolder,
@@ -111,7 +188,7 @@ class App
         )
       end
     when "build"
-      build(buildFolder)
+      build(buildFolder, task)
     when "symlink"
       afterInstall(
         installFolder,

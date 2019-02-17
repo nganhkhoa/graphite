@@ -52,7 +52,9 @@ if command -v pyenv 1>/dev/null 2>&1; then
 fi
 ```
 
-Also there are some app requires other dependencies or require it self to build. I do not know how to solve this problem yet, beside installing them by order for dependecies issue. But for app require it self it build, how???.
+For application that requires it self to build, like `crystal` or `yarn`, give it a link to download the tarball and show the command that should be map. If the command is not found on system PATH, then it will download the tarball (with redirect to 1, because Crystal have not implement follow redirect), extract to temp folder `/tmp/@name/` and add the found command directory to path. The path will be removed when the app is done building.
+
+To work better, `GRAPHITE/bin` should be on PATH. Because after that if any application uses the command (in the sample file, graphite requires crystal), the command should be found.
 
 ## Development
 

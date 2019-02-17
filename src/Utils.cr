@@ -14,6 +14,10 @@ def runCommand(commandString, folder)
   commandString = commandString.split(" ")
   cmd = commandString.first
   argv = commandString.skip(1)
+  runCommand(cmd, argv, folder)
+end
+
+def runCommand(cmd, argv, folder)
   stdout = IO::Memory.new
   stderr = IO::Memory.new
   success = Process.run(
@@ -21,5 +25,5 @@ def runCommand(commandString, folder)
     output: stdout, error: stderr,
     chdir: folder
   )
-  { success, stdout.to_s, stderr.to_s }
+  { success.normal_exit?, stdout.to_s, stderr.to_s }
 end
