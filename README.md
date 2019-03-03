@@ -8,25 +8,19 @@ A tool to automatically create an app folder by github/tarball.
 
 ## Usage
 
-Prepare a yaml file, the syntax like the example [setting.yml](./setting.yml). There seems to be a problem with `Crystal.Dir.mkdir` that cannot use `~/` for home so change it to `/home/username/`.
-
-`./graphite --setting setting.yml install`
-
-Setting file is default to setting.yml so you can omit it.
-
-Will create a folder like below in `folder` key of yaml file.
+Prepare a yaml file, the syntax like the example [setting.yml](./setting.yml) and place it in an empty folder. Run `graphite install`, it will create the bellowing file structure, clone the app in `setting.yml`, build the app with the given commands, and make a symlink (also predefined in setting.yml).
 
 ```
-~/GRAPHITE/
+GRAPHITE/
 ├── app
 ├── bin
 ├── include
 └── lib
 ```
 
-Apps will be clone to `app/`, and then execute build commands. Then a symlink to binary, library, and include folder is made according to the patterns matches in `postinstall` field.
+The general command is `graphite [options] [apps]`.
 
-Then add to `.bashrc` or any config file for your shell. Here I be using `~GRAPHITE`.
+After that, just modify your path to contains GRAPHITE, like below.
 
 ```bash
 # path file
@@ -39,7 +33,7 @@ export LD_LIBRARY_PATH=~/GRAPHITE/lib:$LD_LIBRARY_PATH
 export LIBRARY_PATH=~/GRAPHITE/include:$LIBRARY_PATH
 ```
 
-Not usable with tools requires setting in shell (pyenv, nvm, ...). This could be solve by adding those in a config file and source it.
+Not usable with tools requires setting in shell (pyenv, nvm, ...). This could be solve by adding those in a config file and source it. WORK IS TO BE DONE.
 
 ```bash
 # ~/.bashrc
@@ -52,9 +46,9 @@ if command -v pyenv 1>/dev/null 2>&1; then
 fi
 ```
 
-For application that requires it self to build, like `crystal` or `yarn`, give it a link to download the tarball and show the command that should be map. If the command is not found on system PATH, then it will download the tarball (with redirect to 1, because Crystal have not implement follow redirect), extract to temp folder `/tmp/@name/` and add the found command directory to path. The path will be removed when the app is done building.
+For application that requires itself to build, (crystal, yarn), give it a tar.gz file download link with the command path after extraction. It will use the binary downloaded to build, for exactly, it add the folder to path.
 
-To work better, `GRAPHITE/bin` should be on PATH. Because after that if any application uses the command (in the sample file, graphite requires crystal), the command should be found.
+For application that requires others to build first, this will be solved by making a topology before running the main worker. WORK IS TO BE DONE.
 
 ## Development
 
@@ -70,4 +64,4 @@ TODO: Write development instructions here
 
 ## Contributors
 
-- [Nguyễn Anh Khoa](https://github.com/your-github-user) - creator and maintainer
+- [Nguyễn Anh Khoa](https://github.com/nganhkhoa) - creator and maintainer

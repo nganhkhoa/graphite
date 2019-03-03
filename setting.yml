@@ -1,43 +1,46 @@
-folder: ~/GRAPHITE
-
 apps:
   - name: crystal
     git: 'https://github.com/crystal-lang/crystal.git'
+    targz: 'https://github.com/crystal-lang/crystal/releases/download/0.27.2/crystal-0.27.2-1-linux-x86_64.tar.gz'
     requireSelf:
-      targz: 'https://github.com/crystal-lang/crystal/releases/download/0.27.2/crystal-0.27.2-1-linux-x86_64.tar.gz'
-      command:
-        crystal: 'bin/crystal'
+      crystal: 'bin/crystal'
     build:
       - 'make crystal release=1'
-    postinstall:
+    symlink:
       bin: ["bin/crystal"]
+
+  - name: shards
+    git: 'https://github.com/crystal-lang/shards.git'
+    build:
+      - 'make CRFLAGS=--release'
+    symlink:
+      bin: ['bin/shards']
 
   - name: graphite
     git: 'https://github.com/nganhkhoa/graphite'
     build:
-      - 'locate libgc.so'
       - 'crystal build src/graphite.cr'
-    postinstall:
+    symlink:
       bin: ["graphite"]
-
-  - name: yarn
-    git: 'https://github.com/yarnpkg/yarn'
-    requireSelf:
-      targz: 'https://github.com/yarnpkg/yarn/releases/download/v1.13.0/yarn-v1.13.0.tar.gz'
-      command:
-        yarn: 'bin/yarn'
-    build:
-      - 'yarn install'
-      - './scripts/build-dist.sh'
-    postinstall:
-      bin: ["dist/bin/**"]
-      lib: ["dist/lib/**"]
 
   - name: node
     git: 'https://github.com/nodejs/node.git'
+    tag: 'v11.10.0'
     build:
       - 'pyenv local 2.7.15'
       - './configure'
       - 'make -j4'
-    postinstall:
+    symlink:
       bin: ["node"]
+
+  - name: yarn
+    git: 'https://github.com/yarnpkg/yarn'
+    targz: 'https://yarnpkg.com/latest.tar.gz'
+    requireSelf:
+      yarn: 'bin/yarn'
+    build:
+      - 'yarn install'
+      - './scripts/build-dist.sh'
+    symlink:
+      bin: ["dist/bin/**"]
+      lib: ["dist/lib/**"]

@@ -8,6 +8,9 @@ targets:
   graphite:
     main: src/graphite.cr
 
+libraries:
+  libgit2: ~> 0.24
+
 crystal: 0.27.1
 
 license: MIT

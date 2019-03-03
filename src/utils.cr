@@ -1,3 +1,9 @@
+def createFolder(folders)
+  folders.each do |folder|
+    Dir.mkdir(folder) if !Dir.exists?(folder)
+  end
+end
+
 def commandExists(command : String)
   Process.find_executable(command) ? true : false
 end
@@ -10,14 +16,7 @@ def commandExists(commands : Array(String))
   not_found_command
 end
 
-def runCommand(commandString, folder)
-  commandString = commandString.split(" ")
-  cmd = commandString.first
-  argv = commandString.skip(1)
-  runCommand(cmd, argv, folder)
-end
-
-def runCommand(cmd, argv, folder)
+def runCommandWithArgs(cmd, argv, folder = Dir.current)
   stdout = IO::Memory.new
   stderr = IO::Memory.new
   success = Process.run(
