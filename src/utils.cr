@@ -5,7 +5,10 @@ def createFolder(folders)
 end
 
 def commandExists(command : String)
-  Process.find_executable(command) ? true : false
+  s = Process.find_executable(command) ? true : false
+  # s, _ = runCommandWithArgs("command", ["-v", command])
+  # s = system("command", ["-v", command, ">", "/dev/null"])
+  s
 end
 
 def commandExists(commands : Array(String))
@@ -19,10 +22,10 @@ end
 def runCommandWithArgs(cmd, argv, folder = Dir.current)
   stdout = IO::Memory.new
   stderr = IO::Memory.new
-  success = Process.run(
+  s = Process.run(
     cmd, argv,
     output: stdout, error: stderr,
     chdir: folder
   )
-  { success.normal_exit?, stdout.to_s, stderr.to_s }
+  { s.success?, stdout.to_s, stderr.to_s }
 end

@@ -3,14 +3,14 @@ require "./utils"
 require "./network"
 
 def createWorker(task, argv)
-  empty = ->(app : App, s : String) { }
+  empty = ->(app : App, s : String) { true }
   installProc = ->install(App, String)
   buildProc = ->build(App, String)
   symlinkProc = ->symlink(App, String)
   worker = ->(
-    install : Proc(App, String, Bool) | Proc(App, String, Nil),
-    build : Proc(App, String, Nil),
-    symlink : Proc(App, String, Nil)
+    install : Proc(App, String, Bool),
+    build : Proc(App, String, Bool),
+    symlink : Proc(App, String, Bool)
   ) {
     # argv is closure from scope
     ->(app : App) {
@@ -25,9 +25,11 @@ def createWorker(task, argv)
         exitRoutine
         return
       end
-      build.call(app, buildFolder)
+      unless build.call(app, buildFolder)
+        exitRoutine
+        return
+      end
       symlink.call(app, installFolder)
-      exitRoutine
     }
   }
   case task
@@ -59,7 +61,7 @@ def enterRoutine(app, task, argv)
   when "install", "reinstall", "update"
     true
   else
-    false if !File.exists?("./app/#{app.name}")
+    return false if !File.exists?("./app/#{app.name}")
     true
   end
 end
@@ -119,9 +121,9 @@ def update(app : App, installFolder)
 end
 
 def hasCommandsOrExefile(cmd, folder)
-  exeFound = Process.find_executable(cmd)
+  cmdFound = commandExists(cmd)                # Process.find_executable can only find runable binary, not script
   fileFound = File.exists?("#{folder}/#{cmd}")
-  true if exeFound || fileFound
+  return true if fileFound || cmdFound
   false
 end
 
@@ -180,6 +182,7 @@ def build(app : App, buildFolder)
     status = hasCommandsOrExefile(cmd, buildFolder)
     unless status
       # no command is found either in PATH or file
+      puts "`#{app.name}` requires `#{cmd}` but not found as executable or runable script or command"
       resolveSelfRequire(targz, requireSelf)
     end
   end
@@ -201,10 +204,14 @@ def build(app : App, buildFolder)
       puts "Error"
       puts "STDERR"
       puts stderr
+      ENV["PATH"] = oldpath
+      puts "Build Failed"
+      return false
     end
   end
   ENV["PATH"] = oldpath
   puts "Build Complete"
+  true
 end
 
 def createSymlink(folder, patternArray, target)
@@ -235,4 +242,5 @@ def symlink(app : App, installFolder)
   createSymlink(installFolder, bin_pattern, "./bin")
   createSymlink(installFolder, lib_pattern, "./lib")
   createSymlink(installFolder, include_pattern, "./include")
+  true
 end
