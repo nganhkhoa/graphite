@@ -15,6 +15,7 @@ class App
   property symlink : Hash(String, Array(String)) = {} of String => Array(String)
   property global : Bool = false
 
+  property dependencies : Array(String | App | Nil) = [] of (String | App | Nil)
   property requireSelf : Hash(String, String) = {} of String => String
 
   property skip : Bool = false

@@ -80,9 +80,11 @@ module Graphite
   # puts ENV["LIBRARY_PATH"]
 
   puts "========================================"
-  worker = createWorker(task, argv)
+  apps = defineWorkingSet(apps, argv)
   apps.each do |app|
-    worker.call(app)
+    puts app.name
+    puts app.dependencies
+    puts "======"
   end
   puts "Routine complete"
 

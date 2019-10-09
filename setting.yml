@@ -13,6 +13,8 @@ apps:
     git: 'https://github.com/crystal-lang/shards.git'
     build:
       - 'make CRFLAGS=--release'
+    dependencies:
+      - 'crystal'
     symlink:
       bin: ['bin/shards']
 
@@ -20,24 +22,28 @@ apps:
     git: 'https://github.com/nganhkhoa/graphite'
     build:
       - 'crystal build src/graphite.cr'
+    dependencies:
+      - 'crystal'
     symlink:
       bin: ["graphite"]
 
-  - name: node
-    git: 'https://github.com/nodejs/node.git'
-    tag: 'v11.10.0'
-    build:
-      - 'pyenv local 2.7.15'
-      - './configure'
-      - 'make -j4'
-    symlink:
-      bin: ["node"]
+  # - name: node
+  #   git: 'https://github.com/nodejs/node.git'
+  #   tag: 'v11.10.0'
+  #   build:
+  #     - 'pyenv local 2.7.16'
+  #     - './configure'
+  #     - 'make -j4'
+  #   symlink:
+  #     bin: ["node"]
 
   - name: yarn
     git: 'https://github.com/yarnpkg/yarn'
     targz: 'https://yarnpkg.com/latest.tar.gz'
     requireSelf:
       yarn: 'bin/yarn'
+    dependencies:
+      - 'node'
     build:
       - 'yarn install'
       - './scripts/build-dist.sh'
